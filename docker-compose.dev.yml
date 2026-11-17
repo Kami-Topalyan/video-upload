@@ -1,0 +1,75 @@
+# Development stack with hot reload (source is bind-mounted into the containers).
+#   cp .env.example .env   # then set POSTGRES_PASSWORD and JWT_SECRET
+#   docker compose -f docker-compose.dev.yml up
+# Frontend: http://localhost:5173   API: http://localhost:4000
+
+services:
+  api:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    environment:
+      PORT: 4000
+      UPLOAD_DIR: /data/uploads
+      CORS_ORIGIN: http://localhost:5173
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-5120}
+      # Creates (or promotes) this admin account on start-up. The password is only used
+      # if the account doesn't exist yet.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: app
+      PGUSER: app
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    ports:
+      - "4000:4000"
+    volumes:
+      - ./backend:/app
+      - api_node_modules:/app/node_modules
+      - uploads_dev:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    # So `cd backend && npm run dev` can reach this database from your machine.
+    # Host port 5433 (not 5432) so it can't clash with a Postgres installed locally.
+    ports:
+      - "127.0.0.1:${PGPORT:-5433}:5432"
+    volumes:
+      - postgres_dev:/var/lib/postgresql/data
+      - ./backend/db:/docker-entrypoint-initdb.d:ro,Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  web:
+    image: node:22-alpine
+    working_dir: /app
+    command: sh -c "npm install && npm run dev"
+    environment:
+      VITE_API_PROXY: http://api:4000
+      # Uncomment on macOS/Windows if file changes aren't picked up:
+      # VITE_USE_POLLING: "1"
+    ports:
+      - "5173:5173"
+    volumes:
+      - ./frontend:/app
+      - web_node_modules:/app/node_modules
+    depends_on:
+      - api
+
+volumes:
+  api_node_modules:
+  web_node_modules:
+  uploads_dev:
+  postgres_dev:

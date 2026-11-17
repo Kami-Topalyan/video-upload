@@ -1,0 +1,64 @@
+# Production-style stack: nginx (static React build + /api proxy) -> Express API -> Postgres.
+#   cp .env.example .env   # then set POSTGRES_PASSWORD and JWT_SECRET
+#   docker compose up --build
+# Then open http://localhost:8080
+
+services:
+  api:
+    build: ./backend
+    environment:
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-5120}
+      # Creates (or promotes) this admin account on start-up. The password is only used
+      # if the account doesn't exist yet.
+      ADMIN_USERNAME: ${ADMIN_USERNAME:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: app
+      PGUSER: app
+      PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+    volumes:
+      - uploads:/data/uploads
+    depends_on:
+      db:
+        condition: service_healthy
+    # Reachable from this machine only, for debugging. The web service proxies /api to it.
+    ports:
+      - "127.0.0.1:4000:4000"
+    restart: unless-stopped
+    # Health check (GET /api/health) is defined in backend/Dockerfile.
+
+  db:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: app
+      POSTGRES_USER: app
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
+    # Lets `cd backend && npm run dev` reach this database from your machine (localhost only).
+    # Host port 5433 (not 5432) so it can't clash with a Postgres installed locally.
+    ports:
+      - "127.0.0.1:${PGPORT:-5433}:5432"
+    volumes:
+      - postgres:/var/lib/postgresql/data
+      # Schema runs once, when the postgres volume is first created.
+      - ./backend/db:/docker-entrypoint-initdb.d:ro,Z
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U app -d app"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+
+  web:
+    build: ./frontend
+    ports:
+      - "${WEB_PORT:-8080}:80"
+    depends_on:
+      api:
+        condition: service_healthy
+    restart: unless-stopped
+
+volumes:
+  uploads:
+  postgres:
