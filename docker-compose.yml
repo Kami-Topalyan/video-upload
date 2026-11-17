@@ -26,7 +26,7 @@ services:
         condition: service_healthy
     # Reachable from this machine only, for debugging. The web service proxies /api to it.
     ports:
-      - "127.0.0.1:4000:4000"
+      - "127.0.0.1:${APIPORT:-4000}:4000"
     restart: unless-stopped
     # Health check (GET /api/health) is defined in backend/Dockerfile.
 
