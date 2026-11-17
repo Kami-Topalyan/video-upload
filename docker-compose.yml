@@ -6,7 +6,7 @@
 services:
   api:
     build: ./backend
-    image: ghcr.io/Kami-Topalyan/video-upload-api:latest
+    image: ghcr.io/kami-topalyan/video-upload-api:latest
     environment:
       MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-5120}
       # Creates (or promotes) this admin account on start-up. The password is only used
@@ -53,7 +53,7 @@ services:
 
   web:
     build: ./frontend
-    image: ghcr.io/Kami-Topalyan/video-upload-web:latest
+    image: ghcr.io/kami-topalyan/video-upload-web:latest
     ports:
       - "${WEB_PORT:-8080}:80"
     depends_on:
