@@ -24,7 +24,7 @@ const requiredEnv = (name: string): string => {
 
 export const config = {
   port: positiveNumber(process.env.PORT, 4000),
-  uploadDir: path.resolve(process.env.UPLOAD_DIR ?? "./uploads"),
+  uploadDir: path.resolve(process.env.UPLOAD_DIR || "./uploads"),
   // Per file. Big files are the point of this app, so the default is generous.
   maxFileSizeMb: positiveNumber(process.env.MAX_FILE_SIZE_MB, 5120),
   // Only needed when the browser talks to the API directly (e.g. no proxy in front).

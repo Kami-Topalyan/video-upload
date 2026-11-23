@@ -19,8 +19,9 @@ services:
       PGUSER: app
       PGPASSWORD: ${POSTGRES_PASSWORD:?Set POSTGRES_PASSWORD in .env}
       JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET in .env}
+      UPLOAD_DIR: /data/uploads
     volumes:
-      - ${UPLOADS_DIR:-./uploads}:/data/uploads
+      - ${UPLOAD_DIR:-./uploads}:/data/uploads:z
     depends_on:
       db:
         condition: service_healthy
