@@ -9,7 +9,7 @@ interface UploadRoomsProps {
   isAdmin: boolean | undefined;
 }
 
-export function UploadRooms({ rooms, onSelect, setRooms, isAdmin }: UploadRoomsProps) {
+export function Rooms({ rooms, onSelect, setRooms, isAdmin }: UploadRoomsProps) {
   async function onDeleteRoom(roomId: string) {
     await deleteRoom(roomId);
     onSelect(null);
@@ -25,15 +25,16 @@ export function UploadRooms({ rooms, onSelect, setRooms, isAdmin }: UploadRoomsP
         >
           <span className="text-black font-bold">{room.name}</span>
           <div className="flex gap-6">
-            <button className="text-black font-bold cursor-pointer "
-            onClick={(e) => {
-              e.stopPropagation();
-              onDeleteRoom(room.id);
-            }}>
+
               {isAdmin && (
-                <Trash className="hover:stroke-red-500 transition-colors"/>
+                <button className="text-black font-bold cursor-pointer "
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDeleteRoom(room.id);
+                }}>
+                  <Trash className="hover:stroke-red-500 transition-colors"/>
+                </button>
               )}
-            </button>
           </div>
         </div>
       ))}

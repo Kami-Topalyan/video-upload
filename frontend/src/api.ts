@@ -155,6 +155,20 @@ export const createRoom = async (
     })
   ).room;
 
+
+export const patchRoom = async (
+  roomId: string,
+  name: string,
+  memberIds: string[],
+  requirements: RequirementInput[],
+): Promise<RoomInfo> =>
+  (
+    await request<{ room: RoomInfo }>(`/rooms/${encodeURIComponent(roomId)}`, {
+      method: "PATCH",
+      body: { name, memberIds, requirements },
+    })
+  ).room;
+
 export const deleteRoom = async (roomId: string): Promise<String> =>
     (await request<{ message: String }>(`/rooms/${encodeURIComponent(roomId)}`, {method: "DELETE"})).message
   ;

@@ -46,6 +46,13 @@ export interface Member {
   complete: boolean;
 }
 
+export interface RequirementRow {
+  key: number;
+  kind: FileKind;
+  count: number;
+  label: string;
+}
+
 /** A room as it appears in the sidebar list. */
 export interface RoomSummary {
   id: string;
@@ -72,6 +79,7 @@ export interface RoomDetailed {
   requirements: Requirement[];
   members: Member[];
   files: UploadedFile[];
+  reqFiles: RequirementRow[];
 }
 
 export type UploadStatus = "uploading" | "done" | "error" | "cancelled";

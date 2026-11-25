@@ -4,7 +4,7 @@ import CreateRoomModal from "./components/CreateRoomModal";
 import CreateUserModal from "./components/CreateUserModal";
 import LoginModal from "./components/LoginModal";
 import { RoomView } from "./components/RoomView";
-import { UploadRooms } from "./components/Rooms";
+import { Rooms } from "./components/Rooms";
 import { useAuth } from "./hooks/useAuth";
 import type { RoomDetailed, RoomSummary } from "./types";
 
@@ -104,7 +104,7 @@ export default function App() {
         </div>
         </section>
         <div className="min-h-0 flex-1 overflow-y-auto rounded-md border border-(--border) bg-(--surface)">
-          <UploadRooms rooms={rooms} setRooms={setRooms} onSelect={selectRoom} isAdmin={user?.isAdmin}/>
+          <Rooms rooms={rooms} setRooms={setRooms} onSelect={selectRoom} isAdmin={user?.isAdmin}/>
         </div>
         {user?.isAdmin && (
           <button

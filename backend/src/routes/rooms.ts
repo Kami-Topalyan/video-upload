@@ -567,8 +567,8 @@ roomsRouter.get("/:roomId/files/:fileId", async (req, res) => {
   const { roomId, fileId } = req.params;
 
   const result = isUuid(fileId)
-    ? await pool.query<{ original_name: string; storage_name: string }>(
-        `SELECT original_name, storage_name FROM room_files
+    ? await pool.query<{ original_name: string; storage_name: string; size_bytes: string }>(
+        `SELECT original_name, storage_name, size_bytes FROM room_files
          WHERE id = $1 AND room_id = $2 AND ($3::boolean OR uploaded_by = $4)`,
         [fileId, roomId, res.locals.role === "owner", req.user!.sub],
       )
@@ -582,6 +582,7 @@ roomsRouter.get("/:roomId/files/:fileId", async (req, res) => {
   }
 
   res.setHeader("X-Content-Type-Options", "nosniff");
+  res.setHeader("Content-Length", file.size_bytes);
   res.download(storagePath(file.storage_name), file.original_name, (err) => {
     if (err && !res.headersSent) {
       console.error(`Could not send stored file ${file.storage_name}:`, err);

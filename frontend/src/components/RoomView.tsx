@@ -1,9 +1,10 @@
 import { useState } from "react";
-import { deleteFile, downloadFile } from "../api";
+import { deleteFile, downloadFile, patchRoom } from "../api";
 import { FILE_KINDS, acceptFor, describeRequirement, matchesKind } from "../fileKinds";
 import { useUploads } from "../hooks/useUploads";
 import type { Requirement, RoomDetailed, UploadedFile } from "../types";
 import { Dropzone } from "./Dropzone";
+import EditRoomModal from "./EditRoomModal";
 import { FileList } from "./FileList";
 import { UploadQueue } from "./UploadQueue";
 import { Uploaders } from "./Uploaders";
@@ -23,6 +24,8 @@ export function RoomView({ selectedRoom, currentUserId, onReload }: RoomViewProp
   // Remember which room an error belongs to so it doesn't follow you to another room.
   const [error, setError] = useState<{ roomId: string; message: string } | null>(null);
   const visibleError = error?.roomId === roomId ? error.message : null;
+
+  const [editing, setEditing] = useState(false);
 
   const { items, start, cancel, dismiss } = useUploads(roomId, onReload);
 
@@ -86,6 +89,28 @@ export function RoomView({ selectedRoom, currentUserId, onReload }: RoomViewProp
 
   return (
     <>
+      {selectedRoom.role === "owner" && (
+        <div className="flex items-center justify-between gap-4">
+          <h1 className="text-2xl font-bold">{selectedRoom.room.name}</h1>
+          <button
+            type="button"
+            onClick={() => setEditing(true)}
+            className="rounded-lg bg-blue-600 px-4 py-2 font-semibold text-white transition hover:bg-blue-700"
+          >
+            Edit room
+          </button>
+        </div>
+      )}
+
+      {editing && (
+        <EditRoomModal
+          room={selectedRoom}
+          onClose={() => setEditing(false)}
+          // TODO: connect to the API (PATCH /rooms/:roomId) once editing is supported.
+          onSave={patchRoom}
+        />
+      )}
+
       <section className="bg-(--surface) border border-(--border) p-4 rounded-md h-min" aria-label="Requirements">
         <h2>Each person must upload</h2>
         <ul className="list">
