@@ -6,7 +6,7 @@ import {
   type RequestHandler,
   type Response,
 } from "express";
-import { isPgError, isUuid, pool, withTransaction } from "../db.js";
+import { getUserById, isPgError, isUuid, pool, withTransaction } from "../db.js";
 import { HttpError } from "../errors.js";
 import { isFileKind, matchesKind, type FileKind } from "../fileKinds.js";
 import { requireAdmin, requireAuth } from "../middleware/requireAuth.js";
@@ -445,6 +445,7 @@ interface Requirement {
   kind: FileKind;
   label: string | null;
   count_required: number;
+  room_name: string;
 }
 
 const loadRequirementForUpload: RequestHandler<{ roomId: string; requirementId: string }> = async (
@@ -453,7 +454,7 @@ const loadRequirementForUpload: RequestHandler<{ roomId: string; requirementId: 
   next,
 ) => {
   if (res.locals.role !== "member") {
-    throw new HttpError(403, "Only invited members upload files; the room owner collects them.");
+    throw new HttpError(403, "Only invited members may upload files.");
   }
 
   const { roomId, requirementId } = req.params;
@@ -465,10 +466,12 @@ const loadRequirementForUpload: RequestHandler<{ roomId: string; requirementId: 
 
   const result = await pool.query<Requirement & { uploaded: number }>(
     `SELECT rr.id, rr.kind, rr.label, rr.count_required,
+            r.name AS room_name,
             (SELECT COUNT(*)::int FROM room_files rf
               WHERE rf.requirement_id = rr.id AND rf.uploaded_by = $3) AS uploaded
-     FROM room_requirements rr
-     WHERE rr.id = $1 AND rr.room_id = $2`,
+    FROM room_requirements rr
+    JOIN rooms r ON r.id = rr.room_id
+    WHERE rr.id = $1 AND rr.room_id = $2`,
     [requirementId, roomId, req.user!.sub],
   );
 
@@ -487,13 +490,28 @@ const loadRequirementForUpload: RequestHandler<{ roomId: string; requirementId: 
   next();
 };
 
-const receiveFile: RequestHandler = (req, res, next) => {
-  const { kind } = res.locals.requirement as Requirement;
-  createUpload((file) => matchesKind(kind, file.originalname, file.mimetype)).single("file")(
-    req,
-    res,
-    next,
-  );
+const receiveFile: RequestHandler = async (req, res, next) => {
+  try {
+    const { kind, room_name } = res.locals.requirement as Requirement;
+
+    const safeSegment = (s: string) =>
+      s.normalize("NFKD")
+        .replace(/[^\w.-]+/g, "_")
+        .replace(/^_+|_+$/g, "")
+        .slice(0, 60) || "room";
+
+    const user = await getUserById(req.user!.sub);
+    if (!user) throw new HttpError(401, "User not found.");
+
+    const uFileName = `${safeSegment(user.username)}-${safeSegment(room_name)}`;
+
+    createUpload(
+      (file) => matchesKind(kind, file.originalname, file.mimetype),
+      uFileName,
+    ).single("file")(req, res, next);
+  } catch (err) {
+    next(err);
+  }
 };
 
 roomsRouter.post(

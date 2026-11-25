@@ -91,6 +91,7 @@ app.use(errorHandler);
 
 const server = app.listen(config.port, () => {
   console.log(`API listening on :${config.port} (uploads in ${config.uploadDir})`);
+  console.log(process.env.UPLOAD_DIR)
 });
 
 const shutdown = () => {
