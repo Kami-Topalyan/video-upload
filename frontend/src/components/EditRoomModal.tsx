@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent } from "react";
 import { getUsers } from "../api";
 import { FILE_KINDS, KIND_ORDER } from "../fileKinds";
-import type { FileKind, RequirementInput, RoomDetailed, RoomInfo, User } from "../types";
+import type { FileKind, RoomDetailed, User } from "../types";
 import {
   ErrorMessage,
   Modal,
